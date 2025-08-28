@@ -41,3 +41,24 @@ def dbm_to_watts(dbm_value: float) -> float:
 def watts_to_dbm(watts_value: float) -> float:
     """Convert watts to dBm"""
     return 30 + 10 * np.log10(watts_value)
+
+def check_component_libraries():
+    """Check and display available component libraries"""
+    
+    component_types = ['Gain Blocks', 'Mixers', 'LO Blocks', 'ADCs']
+    
+    print("Component Library Status:")
+    print("-" * 40)
+    
+    for comp_type in component_types:
+        components = get_available_components(comp_type)
+        print(f"{comp_type:15}: {len(components)} files found")
+        
+        if components:
+            for comp in components[:3]:  # Show first 3 files
+                print(f"  └─ {comp}")
+            if len(components) > 3:
+                print(f"  └─ ... and {len(components)-3} more")
+        else:
+            print(f"  └─ No files found in ./Components/{comp_type}/")
+        print()
