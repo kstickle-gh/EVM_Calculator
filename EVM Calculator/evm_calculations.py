@@ -44,6 +44,7 @@ class SystemCalculator:
         distortion_power = np.zeros(n_stages + 1)
         ipn_dbc = np.zeros(n_stages + 1)
         evm_db = np.zeros(n_stages + 1)
+        adcfs = np.zeros(n_stages + 1)  # New parameter for ADC full scale
         
         # Cascaded parameters for tracking
         cumulative_gain = 0.0
@@ -54,6 +55,7 @@ class SystemCalculator:
         noise_power[0] = -174 + linear_to_db(bandwidth_mhz * 1e6)  # Thermal noise floor
         distortion_power[0] = -200  # Very low initial distortion
         ipn_dbc[0] = 0  # Initialize to 0 (will be blank until mixer)
+        adcfs[0] = 0  # No ADC at input
         
         # Calculate input EVM
         signal_linear = db_to_linear(signal_power[0])
@@ -96,7 +98,7 @@ class SystemCalculator:
                 operating_freq = rf_freq
             elif mixer_index >= 0 and i > mixer_index:
                 # Components after mixer use IF frequency
-                operating_freq = abs(if_freq) if if_freq != 0 else rf_freq
+                operating_freq = abs(if_freq)
             else:
                 # Components before mixer use RF frequency
                 operating_freq = rf_freq
@@ -105,6 +107,12 @@ class SystemCalculator:
             gain = component.get_gain(operating_freq)
             nf = component.get_nf(operating_freq)
             iip3 = component.get_iip3(operating_freq)
+            
+            # Get ADCFS if this is an ADC component
+            if isinstance(component, ADC):
+                adcfs[i + 1] = component.get_adcfs(operating_freq)
+            else:
+                adcfs[i + 1] = 0  # Not an ADC component
             
             # Update signal power
             signal_power[i + 1] = signal_power[i] + gain
@@ -197,6 +205,7 @@ class SystemCalculator:
             'distortion_power': distortion_power,
             'ipn_dbc': ipn_dbc,
             'evm_db': evm_db,
+            'adcfs': adcfs,  # New parameter added here
             'component_names': ['Input Signal'] + self.chain.component_names,
             'total_gain': cumulative_gain,
             'total_nf': linear_to_db(cumulative_nf_linear),
